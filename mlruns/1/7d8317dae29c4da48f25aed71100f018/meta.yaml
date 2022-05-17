@@ -1,0 +1,15 @@
+artifact_uri: file:///home/sarah/code/scameronp/TaxiFareModel/mlruns/1/7d8317dae29c4da48f25aed71100f018/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: 7d8317dae29c4da48f25aed71100f018
+run_uuid: 7d8317dae29c4da48f25aed71100f018
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1652812066397
+status: 1
+tags: []
+user_id: unknown
