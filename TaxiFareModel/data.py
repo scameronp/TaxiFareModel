@@ -1,11 +1,13 @@
 import pandas as pd
 
-AWS_BUCKET_PATH = "s3://wagon-public-datasets/taxi-fare-train.csv"
+#AWS_BUCKET_PATH = "s3://wagon-public-datasets/taxi-fare-train.csv"
+BUCKET_NAME = 'wagon-data-847-cameronpesant'
+BUCKET_TRAIN_DATA_PATH = 'data/train_1k.csv'
 
 
-def get_data(nrows=10_000):
+def get_data(nrows=1000):
     '''returns a DataFrame with nrows from s3 bucket'''
-    df = pd.read_csv(AWS_BUCKET_PATH, nrows=nrows)
+    df = pd.read_csv(f"gs://{BUCKET_NAME}/{BUCKET_TRAIN_DATA_PATH}", nrows=1000)
     return df
 
 

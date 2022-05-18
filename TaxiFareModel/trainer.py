@@ -10,12 +10,15 @@ import mlflow
 from  mlflow.tracking import MlflowClient
 import joblib
 from sklearn.model_selection import train_test_split
+from google.cloud import storage
 
+STORAGE_LOCATION = 'models/taxifaremodel/model.joblib'
+BUCKET_NAME = "wagon-data-847-cameronpesant"
 
 class Trainer(object):
 
     MLFLOW_URI = "https://mlflow.lewagon.ai/"
-    EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] taxifare + 1.2"
+    EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] taxifare + 1.4"
 
     def __init__(self, X, y):
         """
@@ -47,22 +50,44 @@ class Trainer(object):
             ('preproc', preproc_pipe),
             ('linear_model', LinearRegression())
         ])
-        return pipeline
+        self.pipeline = pipeline
 
     def run(self):
         """set and train the pipeline"""
-        fitted_pipeline = self.set_pipeline().fit(self.X, self.y)
-        return fitted_pipeline
+        self.set_pipeline()
+        self.pipeline.fit(self.X, self.y)
 
     def evaluate(self, X_test, y_test):
         """evaluates the pipeline on df_test and return the RMSE"""
-        y_pred = self.run().predict(X_test)
+        y_pred = self.pipeline.predict(X_test)
         rmse = compute_rmse(y_pred, y_test)
         return rmse
 
+    def predict(self, X_test):
+        """predict y_pred"""
+        y_pred = self.pipeline.predict(X_test)
+        return y_pred
+
+
     def save_model(self):
-        """Save the model into a .joblib format"""
+        """method that saves the model into a .joblib file and uploads it on Google Storage /models folder
+        HINTS : use joblib library and google-cloud-storage"""
+
+        # saving the trained model to disk is mandatory to then beeing able to upload it to storage
+        # Implement here
         joblib.dump(self.pipeline, 'model.joblib')
+        print("saved model.joblib locally")
+
+        # Implement here
+        self.upload_model_to_gcp()
+        print(f"uploaded model.joblib to gcp cloud storage under \n => {STORAGE_LOCATION}")
+
+
+    def upload_model_to_gcp(self):
+        client = storage.Client()
+        bucket = client.bucket(BUCKET_NAME)
+        blob = bucket.blob(STORAGE_LOCATION)
+        blob.upload_from_filename('model.joblib')
 
 
     # MLFlow methods
