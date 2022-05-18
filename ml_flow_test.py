@@ -15,7 +15,7 @@
 import mlflow
 from mlflow.tracking import MlflowClient
 
-EXPERIMENT_NAME = "test_experiment"
+EXPERIMENT_NAME = "test_experiment_scameronp"
 
 # Indicate mlflow to log to remote server
 mlflow.set_tracking_uri("https://mlflow.lewagon.ai/")
@@ -27,7 +27,7 @@ try:
 except BaseException:
     experiment_id = client.get_experiment_by_name(EXPERIMENT_NAME).experiment_id
 
-yourname = None
+yourname = 'scameronp'
 
 if yourname is None:
     print("please define your name, il will be used as a parameter to log")

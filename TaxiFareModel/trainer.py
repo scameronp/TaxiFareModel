@@ -12,10 +12,10 @@ import joblib
 from sklearn.model_selection import train_test_split
 
 
-MLFLOW_URI = "https://mlflow.lewagon.ai/"
-EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] taxifare + 1.0"
-
 class Trainer(object):
+
+    MLFLOW_URI = "https://mlflow.lewagon.ai/"
+    EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] taxifare + 1.2"
 
     def __init__(self, X, y):
         """
@@ -25,11 +25,9 @@ class Trainer(object):
         self.pipeline = None
         self.X = X
         self.y = y
-        self.experiment_name = EXPERIMENT_NAME
+        self.experiment_name = Trainer.EXPERIMENT_NAME
+        self.MLFLOW_URI = Trainer.MLFLOW_URI
 
-    def set_experiment_name(self, experiment_name):
-        '''defines the experiment name for MLFlow'''
-        self.experiment_name = experiment_name
 
     def set_pipeline(self):
         """defines the pipeline as a class attribute"""
@@ -80,14 +78,15 @@ class Trainer(object):
         except BaseException:
             return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
 
-    def mlflow_create_run(self):
-	    self.mlfow_run = self.mlflow_client.create_run(self.mlflow_experiment_id)
+    @memoized_property
+    def mlflow_run(self):
+        return self.mlflow_client.create_run(self.mlflow_experiment_id)
 
     def mlflow_log_param(self, key, value):
-        self.mlflow_client.log_param(self.mlfow_run.info.run_id, key, value)
+        self.mlflow_client.log_param(self.mlflow_run.info.run_id, key, value)
 
     def mlflow_log_metric(self, key, value):
-        self.mlflow_client.log_metric(self.mlfow_run.info.run_id, key, value)
+        self.mlflow_client.log_metric(self.mlflow_run.info.run_id, key, value)
 
 
 if __name__ == "__main__":
@@ -105,5 +104,7 @@ if __name__ == "__main__":
     rmse = trainer.evaluate(X_test, y_test)
     print(f"rmse: {rmse}")
     trainer.save_model()
-    #experiment_id = trainer.mlflow_experiment_id
-    #print(f"experiment URL: https://mlflow.lewagon.ai/#/experiments/{experiment_id}")
+    trainer.mlflow_log_param("model", "LinearRegression")
+    trainer.mlflow_log_metric("rmse", rmse)
+    experiment_id = trainer.mlflow_experiment_id
+    print(f"experiment URL: https://mlflow.lewagon.ai/#/experiments/{experiment_id}")
