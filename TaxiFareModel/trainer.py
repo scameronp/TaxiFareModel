@@ -8,11 +8,14 @@ from TaxiFareModel.encoders import DistanceTransformer, TimeFeaturesEncoder
 from memoized_property import memoized_property
 import mlflow
 from  mlflow.tracking import MlflowClient
+import joblib
+from sklearn.model_selection import train_test_split
 
 
-class Trainer():
-    MLFLOW_URI = "https://mlflow.lewagon.ai/"
-    EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] LinearRegression + v1"
+MLFLOW_URI = "https://mlflow.lewagon.ai/"
+EXPERIMENT_NAME = "[CA] [Montreal] [scameronp] taxifare + 1.0"
+
+class Trainer(object):
 
     def __init__(self, X, y):
         """
@@ -22,28 +25,11 @@ class Trainer():
         self.pipeline = None
         self.X = X
         self.y = y
+        self.experiment_name = EXPERIMENT_NAME
 
-    @memoized_property
-    def mlflow_client(self):
-        mlflow.set_tracking_uri(self.MLFLOW_URI)
-        return MlflowClient()
-
-    @memoized_property
-    def mlflow_experiment_id(self):
-        try:
-            return self.mlflow_client.create_experiment(self.experiment_name)
-        except BaseException:
-            return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
-
-    def mlflow_create_run(self):
-	    self.mlfow_run = self.mlflow_client.create_run(self.mlflow_experiment_id)
-
-    def mlflow_log_param(self, key, value):
-        self.mlflow_client.log_param(self.mlfow_run.info.run_id, key, value)
-
-    def mlflow_log_metric(self, key, value):
-        self.mlflow_client.log_metric(self.mlfow_run.info.run_id, key, value)
-
+    def set_experiment_name(self, experiment_name):
+        '''defines the experiment name for MLFlow'''
+        self.experiment_name = experiment_name
 
     def set_pipeline(self):
         """defines the pipeline as a class attribute"""
@@ -76,12 +62,48 @@ class Trainer():
         rmse = compute_rmse(y_pred, y_test)
         return rmse
 
+    def save_model(self):
+        """Save the model into a .joblib format"""
+        joblib.dump(self.pipeline, 'model.joblib')
+
+
+    # MLFlow methods
+    @memoized_property
+    def mlflow_client(self):
+        mlflow.set_tracking_uri(self.MLFLOW_URI)
+        return MlflowClient()
+
+    @memoized_property
+    def mlflow_experiment_id(self):
+        try:
+            return self.mlflow_client.create_experiment(self.experiment_name)
+        except BaseException:
+            return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
+
+    def mlflow_create_run(self):
+	    self.mlfow_run = self.mlflow_client.create_run(self.mlflow_experiment_id)
+
+    def mlflow_log_param(self, key, value):
+        self.mlflow_client.log_param(self.mlfow_run.info.run_id, key, value)
+
+    def mlflow_log_metric(self, key, value):
+        self.mlflow_client.log_metric(self.mlfow_run.info.run_id, key, value)
+
 
 if __name__ == "__main__":
-    data = get_data()
-    clean_data = clean_data()
-    # set X and y
-    # hold out
-    # train
-    # evaluate
-    print('TODO')
+    # Get and clean data
+    N = 10000
+    df = get_data(nrows=N)
+    df = clean_data(df)
+    y = df["fare_amount"]
+    X = df.drop("fare_amount", axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+    # Train and save model, locally and
+    trainer = Trainer(X=X_train, y=y_train)
+    # trainer.set_experiment_name('xp2')
+    trainer.run()
+    rmse = trainer.evaluate(X_test, y_test)
+    print(f"rmse: {rmse}")
+    trainer.save_model()
+    #experiment_id = trainer.mlflow_experiment_id
+    #print(f"experiment URL: https://mlflow.lewagon.ai/#/experiments/{experiment_id}")
